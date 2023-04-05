@@ -3,8 +3,6 @@ import psycopg2
 def create_db(conn):
     with conn.cursor() as cur:
         cur.execute("""
-        DROP TABLE Phones;
-        DROP TABLE Clients;
         
         CREATE TABLE IF NOT EXISTS Clients (
             client_id SERIAL PRIMARY KEY,
@@ -13,12 +11,12 @@ def create_db(conn):
             email VARCHAR(30) NOT NULL
         );	
         CREATE TABLE IF NOT EXISTS Phones (
-            id INTEGER NOT NULL REFERENCES Clients(client_id),
+            id INTEGER NOT NULL REFERENCES Clients(client_id) ON DELETE CASCADE,
             phone INTEGER NOT NULL UNIQUE,
             CONSTRAINT ch PRIMARY KEY (id, phone)
         );
-    conn.commit()  # фиксируем в БД
-conn.close()        
+#    conn.commit()  # фиксируем в БД
+#conn.close()        
                 """)
 
 def add_client(conn, first_name, last_name, email, phone=None):
@@ -39,6 +37,10 @@ def delete_client(conn, client_id):
 def find_client(conn, first_name=None, last_name=None, email=None, phone=None):
     pass
 
+def drop_table()
+    DROP TABLE IF NOT EXISTS Phones;
+    DROP TABLE IF NOT EXISTS Clients;
 
 with psycopg2.connect(database="clients_db", user="postgres", password="postgres") as conn:
+    drop_table()# удаляем таблицы
     create_db()  # вызывайте функции здесь
