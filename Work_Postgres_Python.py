@@ -11,9 +11,9 @@ def create_db(conn):
             email VARCHAR(30) NOT NULL
         );	
         CREATE TABLE IF NOT EXISTS Phones (
-            id INTEGER NOT NULL REFERENCES Clients(client_id) ON DELETE CASCADE,
+            id INTEGER NOT NULL REFERENCES Clients ON DELETE CASCADE,
             phone INTEGER NOT NULL UNIQUE,
-            CONSTRAINT ch PRIMARY KEY (id, phone)
+            #CONSTRAINT ch PRIMARY KEY (id, phone)
         );
 #    conn.commit()  # фиксируем в БД
 #conn.close()        
@@ -38,7 +38,7 @@ def find_client(conn, first_name=None, last_name=None, email=None, phone=None):
     pass
 
 def drop_table()
-    DROP TABLE IF NOT EXISTS Phones;
+    DROP TABLE IF NOT EXISTS Phones ON DELETE CASCADE;
     DROP TABLE IF NOT EXISTS Clients;
 
 with psycopg2.connect(database="clients_db", user="postgres", password="postgres") as conn:
