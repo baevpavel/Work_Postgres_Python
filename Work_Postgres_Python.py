@@ -42,5 +42,5 @@ def drop_table()
     DROP TABLE IF NOT EXISTS Clients;
 
 with psycopg2.connect(database="clients_db", user="postgres", password="postgres") as conn:
-    drop_table()# удаляем таблицы
-    create_db()  # вызывайте функции здесь
+    drop_table(conn)# удаляем таблицы
+    create_db(conn)  # вызывайте функции здесь
