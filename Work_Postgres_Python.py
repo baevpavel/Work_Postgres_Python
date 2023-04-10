@@ -16,7 +16,18 @@ def create_db(conn):
                 """)
 
 def add_client(conn, first_name, last_name, email, phone=None):
-    pass
+    with conn.cursor() as cur:
+        cur.execute("""
+        INSERT INTO Clients VALUES
+        (DEFAULT, %s, %s, %s) RETURNING client_id;
+        """, (first_name, last_name, email))
+        
+        if phone != None:
+            cur.execute("""
+            INSERT INTO Phones VALUES
+            (%s, %s) RETURNING phone;
+                    """, (cur.fetchone(), phone))
+        # print(cur.fetchone()[0])
 
 def add_phone(conn, client_id, phone):
     pass
@@ -40,6 +51,7 @@ def drop_table()
         DROP TABLE IF EXISTS Clients;
                 """)
 
-with psycopg2.connect(database="client_db", user="postgres", password="postgres") as conn:
-    drop_table(conn)# удаляем таблицы
+with psycopg2.connect(database="clients_db", user="postgres", password="postgres") as conn:
+    drop_table(conn) # удаляем таблицы
     create_db(conn)  # вызывайте функции здесь
+    print("Insert good", add_client(conn,'name1','name2','7@kkt1.ru', '79080810820'))
