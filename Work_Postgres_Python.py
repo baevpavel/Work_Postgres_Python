@@ -49,7 +49,18 @@ def delete_client(conn, client_id):
     pass
 
 def find_client(conn, first_name=None, last_name=None, email=None, phone=None):
-    pass
+    with conn.cursor() as cur:
+        if first_name != None:
+            cur.execute("""
+                SELECT client_id FROM Clients WHERE first_name = %s
+                        """, (first_name,))
+            a=cur.fetchall()
+            b=[]
+            for i in a:
+                b.append(i[0])
+                print(tuple(b))
+        # a = (row for row in cur.fetchall())
+        print('fetchall', a)  # извлечь все строки
 
 def drop_table()
     with conn.cursor() as cur:
