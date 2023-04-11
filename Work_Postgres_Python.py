@@ -21,16 +21,23 @@ def add_client(conn, first_name, last_name, email, phone=None):
         INSERT INTO Clients VALUES
         (DEFAULT, %s, %s, %s) RETURNING client_id;
         """, (first_name, last_name, email))
-        
+
         if phone != None:
-            cur.execute("""
-            INSERT INTO Phones VALUES
-            (%s, %s) RETURNING phone;
-                    """, (cur.fetchone(), phone))
-        # print(cur.fetchone()[0])
+            add_phone(conn, cur.fetchone(), phone)
+
+        return (first_name, last_name, email, phone)
 
 def add_phone(conn, client_id, phone):
-    pass
+    with conn.cursor() as cur:
+        cur.execute("""
+        SELECT client_id FROM %s
+                """, (client_id))
+
+        cur.execute("""
+        INSERT INTO Phones VALUES
+        (%s, %s) RETURNING phone;
+                """, (client_id, phone))
+        return (cur.fetchone()[0])
 
 def change_client(conn, client_id, first_name=None, last_name=None, email=None):
     pass
@@ -52,6 +59,9 @@ def drop_table()
                 """)
 
 with psycopg2.connect(database="clients_db", user="postgres", password="postgres") as conn:
-    drop_table(conn) # удаляем таблицы
-    create_db(conn)  # вызывайте функции здесь
-    print("Insert good", add_client(conn,'name1','name2','7@kkt1.ru', '79080810820'))
+    pass
+    # drop_db(conn)
+    # create_db(conn)
+    # add_client(conn,'name1','name2','9@kkt1.ru')
+    # print("Add client", add_client(conn,'name1','name2','13@kkt.ru', '79125487543'))
+    # print("Add phone", add_phone(conn, 1, '79242345678'))
