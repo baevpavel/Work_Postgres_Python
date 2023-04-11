@@ -59,25 +59,22 @@ def find_client(conn, first_name=None, last_name=None, email=None, phone=None):
         list_atr = [first_name, last_name, email]
         new_str = ''
         if phone != None:
-            new_str = ' AND phone = %s::text'
+            new_str = ' AND phone = %s'
             list_atr.append(phone)
         sel_str = f"""
-            SELECT  
-                email,
-                first_name,
-                last_name,
+            SELECT email, first_name, last_name,
                 CASE
                     WHEN ARRAY_AGG(phone) = '{{Null}}' THEN '{{}}'
                     ELSE ARRAY_AGG(phone)
-                END phones 
-            FROM Clients c/* Из таблицы клиентов */
+                END phones
+            FROM Clients c
             LEFT JOIN Phones p ON c.client_id = p.id
             WHERE first_name ILIKE %s AND last_name ILIKE %s AND email ILIKE %s{new_str}
 	    GROUP BY email, first_name, last_name
 	    """
         curs.execute(
             sel_str,
-            new_str
+            list_atr
         )
         return curs.fetchall()
 
