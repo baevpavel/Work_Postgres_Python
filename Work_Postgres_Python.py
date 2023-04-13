@@ -1,11 +1,13 @@
 import psycopg2
 
+
 def drop_db(conn):
     with conn.cursor() as cur:
         cur.execute("""
         DROP TABLE IF EXISTS Phones CASCADE;
         DROP TABLE IF EXISTS Clients;
             """)
+
 
 def create_db(conn):
     with conn.cursor() as cur:
@@ -22,6 +24,7 @@ def create_db(conn):
         );
                 """)
 
+
 def add_client(conn, first_name, last_name, email, phone=None):
     with conn.cursor() as cur:
         if find_client(conn, first_name, last_name, email):
@@ -30,13 +33,13 @@ def add_client(conn, first_name, last_name, email, phone=None):
             if find_client(conn, phone=phone):
                 return "Phone not unique!"
         cur.execute("""
-        INSERT INTO Clients VALUES
-        (DEFAULT, %s, %s, %s) RETURNING client_id;
+        INSERT INTO Clients VALUES (DEFAULT, %s, %s, %s) RETURNING client_id;
         """, (first_name, last_name, email))
+        print(f"""Add client: {first_name} {last_name}, {email}""")
         if phone != None:
-            add_phone(conn, cur.fetchone(), phone)
+            print(f"""Add phone: {add_phone(conn, cur.fetchone(), phone)}""")
+        return "Completed successfully"
 
-        return (first_name, last_name, email, phone)
 
 def add_phone(conn, client_id, phone):
     if find_client(conn, phone=phone):
@@ -49,40 +52,86 @@ def add_phone(conn, client_id, phone):
         if not cur.fetchone():
             return "The client does not exist"
         cur.execute("""
-        INSERT INTO Phones VALUES
-        (%s, %s) RETURNING phone;
+        INSERT INTO Phones VALUES (%s, %s) RETURNING phone;
                 """, (client_id, phone))
-        return (cur.fetchone()[0])
+        return cur.fetchone()[0]
 
 
 def change_client(conn, client_id, first_name=None, last_name=None, email=None):
     with conn.cursor() as curs:
         curs.execute(
             """
-            SELECT client_id, first_name, last_name, email FROM Clients #--Из таблицы клиентов получаем имя, фамилию почту и id клиента. Такой порядок важен, т.к. легче будет передавать данные далее в запрос
-            WHERE client_id = %s; --Где id клиента равно %s
+            SELECT * FROM Clients
+            WHERE client_id = %s;
             """,
-            (client_id,) #Передаем id клиента
+            (client_id,)
         )
-        client_data = curs.fetchone() #Получаем данные пользователя в виде кортежа из запроса и сохраняем в переменную
-        if not client_data: #Если селект данные не вернул, то проваливаемся в блок
-            return "Еhe client does not exist" #Сообщаем, что такого пользователя нет
-        if client_data[0]: #Если имя пустое, то проваливаемся в блок
-            first_name = client_data[0] #Изменяем имя клиента на значение из кортежа, который вернулся из запроса
-        if client_data[1]: #Если фамилия пустая, то проваливаемся в блок
-            first_name = client_data[1] #Изменяем фамилию клиента на значение из кортежа, который вернулся из запроса
-        if client_data[2]: #Если почта пустая, то проваливаемся в блок
-            email = client_data[2] #Изменяем почту клиента на значение из кортежа, который вернулся из запроса
+        client_data = curs.fetchone()
+        if not client_data:
+            return "Еhe client does not exist"
+        if not first_name:
+            first_name = client_data[1]
+        if not last_name:
+            last_name = client_data[2]
+        if not email:
+            email = client_data[3]
         curs.execute(
             """
-            UPDATE Clients /* Обновляем таблицу клиентов */
-            SET first_name = %s, last_name = %s, email = %s /* Где для имени, фамилии и почты устанавливаем новые значения */
-            WHERE client_id = %s; /* Где id клиента равно передаваемому значению */
+            UPDATE Clients
+            SET first_name = %s, last_name = %s, email = %s
+            WHERE client_id = %s;
             """,
-            (client_id, first_name, last_name, email) #Передаем имя, фамилию, почту и айди клиента
+            (first_name, last_name, email, client_id)
         )
         conn.commit()
-    return "Пользователь успешно изменен"
+    return "Client data changed successfully"
+
+
+def delete_phone(conn, client_id, phone):
+    with conn.cursor() as curs:
+        curs.execute(
+            """
+            SELECT * FROM Clients
+            WHERE client_id = %s;
+            """,
+            (client_id,)
+        )
+        if not curs.fetchone():
+           return "The client does not exist"
+        curs.execute(
+            """
+            SELECT * FROM Phones
+            WHERE phone = %s;
+            """, (phone,)
+        )
+        if not curs.fetchone():
+           return "The phone does not exist"
+        curs.execute(
+            """
+            DELETE FROM Phones WHERE phone = %s;
+            """, (phone,)
+        )
+        conn.commit()
+        return "The phone was successfully deleted"
+
+
+def delete_client(conn, client_id):
+    with conn.cursor() as curs:
+        curs.execute(
+            """
+            SELECT * FROM Clients WHERE client_id = %s;
+            """, (client_id,)
+        )
+        if not curs.fetchone():
+           return "The client does not exist"
+        curs.execute(
+            """
+            DELETE FROM Clients WHERE client_id = %s;
+            """, (client_id,)
+        )
+        conn.commit()
+        return "the client was successfully deleted!"
+
 
 def find_client(conn, first_name=None, last_name=None, email=None, phone=None):
     with conn.cursor() as curs:
@@ -109,24 +158,25 @@ def find_client(conn, first_name=None, last_name=None, email=None, phone=None):
 	    GROUP BY email, first_name, last_name
 	    """
         curs.execute(
-            sel_str,
-            list_atr
+            sel_str, list_atr
         )
         return curs.fetchall()
+
+
 with psycopg2.connect(database="clients_db", user="postgres", password="postgres") as conn:
     pass
     # drop_db(conn)
     # create_db(conn)
-    print(add_client(conn,'name08','name078','08@kkt1.ru', '89000000002'))
+    # print(add_client(conn,'name08','name078','08@kkt1.ru', '89000000002'))
     # print(find_client(conn,'name05','name05','05@kkt1.ru'))
     # print(find_client(conn, phone='79242345679'))
-    # print("Add client", add_client(conn,'name1','name2','13@kkt.ru', '79125487543'))
-    # print("Add phone:", add_phone(conn, 1, '89000000003'))
-    # print("Result find: ", find_client(conn,'name1'))
-    # print("Result find: ", find_client(conn,'name1', 'name2'))
-    # print("Result find: ", find_client(conn, email ='6@kkt1.ru'))
-    # print("Result find: ", find_client(conn, phone='71234567890'))
-    # print("Result find: ", find_client(conn, phone='89000000000'))
-
-
-
+    # print(add_client(conn,'name14','name14','4@kkt.ru', '89000000007'))
+    # print(add_phone(conn, 1, '89000000003'))
+    # print(find_client(conn,'name1'))
+    # print(find_client(conn,'name1', 'name2'))
+    # print(find_client(conn, email ='6@kkt1.ru'))
+    # print(find_client(conn, phone='71234567890'))
+    # print(find_client(conn, phone='89000000000'))
+    # print(change_client(conn, 11, email='13@kkt1.ru', first_name='new_name', last_name='new_surname'))
+    # print(delete_phone(conn, 1, '89000000000'))
+    # print(delete_client(conn, 11))
