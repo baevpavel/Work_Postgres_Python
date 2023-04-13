@@ -56,7 +56,33 @@ def add_phone(conn, client_id, phone):
 
 
 def change_client(conn, client_id, first_name=None, last_name=None, email=None):
-    pass
+    with conn.cursor() as curs:
+        curs.execute(
+            """
+            SELECT client_id, first_name, last_name, email FROM Clients #--Из таблицы клиентов получаем имя, фамилию почту и id клиента. Такой порядок важен, т.к. легче будет передавать данные далее в запрос
+            WHERE client_id = %s; --Где id клиента равно %s
+            """,
+            (client_id,) #Передаем id клиента
+        )
+        client_data = curs.fetchone() #Получаем данные пользователя в виде кортежа из запроса и сохраняем в переменную
+        if not client_data: #Если селект данные не вернул, то проваливаемся в блок
+            return "Еhe client does not exist" #Сообщаем, что такого пользователя нет
+        if client_data[0]: #Если имя пустое, то проваливаемся в блок
+            first_name = client_data[0] #Изменяем имя клиента на значение из кортежа, который вернулся из запроса
+        if client_data[1]: #Если фамилия пустая, то проваливаемся в блок
+            first_name = client_data[1] #Изменяем фамилию клиента на значение из кортежа, который вернулся из запроса
+        if client_data[2]: #Если почта пустая, то проваливаемся в блок
+            email = client_data[2] #Изменяем почту клиента на значение из кортежа, который вернулся из запроса
+        curs.execute(
+            """
+            UPDATE Clients /* Обновляем таблицу клиентов */
+            SET first_name = %s, last_name = %s, email = %s /* Где для имени, фамилии и почты устанавливаем новые значения */
+            WHERE client_id = %s; /* Где id клиента равно передаваемому значению */
+            """,
+            (client_id, first_name, last_name, email) #Передаем имя, фамилию, почту и айди клиента
+        )
+        conn.commit()
+    return "Пользователь успешно изменен"
 
 def find_client(conn, first_name=None, last_name=None, email=None, phone=None):
     with conn.cursor() as curs:
